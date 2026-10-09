@@ -87,7 +87,7 @@ async def start_health_server():
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
 
-    logging.info("HTTP health server started on port %s", port)
+    log.info("HTTP health server started on port %s", port)
 
 
 async def start_bot():
