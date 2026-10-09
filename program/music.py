@@ -5,9 +5,7 @@ import re
 import asyncio
 import subprocess
 from time import time
-
-import logging
-
+import logging       
 from config import ASSISTANT_NAME, BOT_USERNAME, COOKIES_FILE, IMG_1, IMG_2, MAX_QUEUE_SIZE, PROXY_URL, SPONSORBLOCK_REMOVE
 from driver.design.thumbnail import thumb
 from driver.design.chatname import CHAT_TITLE
@@ -22,6 +20,18 @@ from pyrogram.errors import UserAlreadyParticipant, UserNotParticipant, PeerIdIn
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 from youtubesearchpython import VideosSearch
 
+def log_ytdlp_version():
+    try:
+        result = subprocess.run(
+            ["yt-dlp", "--version"],
+            capture_output=True,
+            text=True,
+            timeout=15,
+            check=True,
+        )
+        log.info("YT-DLP VERSION: %s", result.stdout.strip())
+    except Exception:
+        log.exception("Could not check yt-dlp version")
 
 log = logging.getLogger(__name__)
 
