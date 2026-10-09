@@ -1,3 +1,5 @@
+import os
+from aiohttp import web
 import asyncio
 import logging
 
@@ -66,6 +68,26 @@ async def heartbeat():
         except OSError:
             pass
         await asyncio.sleep(30)
+async def health_check(request):
+    return web.json_response({
+        "status": "ok",
+        "service": "Telegram Music Bot"
+    })
+
+
+async def start_health_server():
+    app = web.Application()
+    app.router.add_get("/", health_check)
+    app.router.add_get("/health", health_check)
+
+    runner = web.AppRunner(app)
+    await runner.setup()
+
+    port = int(os.environ.get("PORT", "10000"))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+
+    logging.info("HTTP health server started on port %s", port)
 
 
 async def start_bot():
@@ -97,6 +119,7 @@ async def start_bot():
     asyncio.ensure_future(radio_updater())
     log.info("starting pytgcalls client")
     await call_py.start()
+    await start_health_server()
     await idle()
     log.info("stopping bot & userbot")
     await bot.stop()
