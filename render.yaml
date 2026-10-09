@@ -39,10 +39,10 @@ services:
         sync: false
 
       - key: DOWNLOADS_CACHE_LIMIT_MB
-	value: 4096
+		value: 4096
 
       - key: IDLE_LEAVE_MINUTES
-	value: 10
+		value: 10
 
       - key: UPSTREAM_REPO
         sync: false
