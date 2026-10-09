@@ -79,57 +79,126 @@ def ytsearch(query: str):
 _YT_RE = re.compile(r"https?://(www\.|m\.)?(youtube\.com|youtu\.be)/")
 
 
+
 async def ytdl(format: str, link: str, status_msg=None):
-    # For non-YouTube sites (e.g. Rutube) the formats are HLS-only muxed streams
-    # that would require downloading gigabytes before playback.  Instead, extract
-    # the direct stream URL and hand it to ffmpeg live (same as radio).
-    # YouTube must still be downloaded first because its URLs 403 ffmpeg directly.
-    if not _YT_RE.match(link):
-        proc = await asyncio.create_subprocess_exec(
-            "yt-dlp", "--no-warnings", "--no-playlist",
-            *_ytdl_site_flags(),
-            "-f", "worstaudio/worst",
-            "--print", "%(url)s",
+    """Return (1, stream_url_or_filepath) or (0, error_message)."""
+    try:
+        if not link or not isinstance(link, str):
+            return 0, "Invalid media URL."
+
+        is_youtube = bool(_YT_RE.match(link))
+
+        # Non-YouTube sites: extract a direct stream URL.
+        if not is_youtube:
+            command_args = [
+                "yt-dlp",
+                "--no-warnings",
+                "--no-playlist",
+                *_ytdl_site_flags(),
+                "-f", "worstaudio/worst",
+                "--print", "%(url)s",
+                link,
+            ]
+
+            proc = await asyncio.create_subprocess_exec(
+                *command_args,
+                stdout=asyncio.subprocess.PIPE,
+                stderr=asyncio.subprocess.PIPE,
+            )
+
+            stdout, stderr = await proc.communicate()
+            stream_url = stdout.decode(
+                "utf-8", errors="replace"
+            ).strip()
+
+            if proc.returncode == 0 and stream_url:
+                return 1, stream_url
+
+            error_text = stderr.decode(
+                "utf-8", errors="replace"
+            ).strip()
+
+            return 0, error_text[-1000:] or (
+                "Could not extract the media stream URL."
+            )
+
+        # YouTube: download audio before handing it to the player.
+        os.makedirs("downloads", exist_ok=True)
+
+        command_args = [
+            "yt-dlp",
+            "--no-warnings",
+            "--no-playlist",
+            "--socket-timeout", "60",
+        ]
+
+        if COOKIES_FILE and os.path.isfile(COOKIES_FILE):
+            command_args += ["--cookies", COOKIES_FILE]
+
+        if SPONSORBLOCK_REMOVE:
+            command_args += [
+                "--sponsorblock-remove",
+                SPONSORBLOCK_REMOVE,
+            ]
+
+        command_args += [
+            "--newline",
+            "--progress-template",
+            (
+                "download:PROG|%(progress._percent_str)s|"
+                "%(progress._speed_str)s|%(progress._eta_str)s"
+            ),
+            "--print", "after_move:filepath",
+            "-f", format or "bestaudio/best",
+            "-o", "downloads/%(id)s.%(ext)s",
             link,
-            stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE,
+        ]
+
+        proc = await asyncio.create_subprocess_exec(
+            *command_args,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
         )
+
         stdout, stderr = await proc.communicate()
-        if proc.returncode == 0:
-            url = stdout.decode(errors="ignore").strip()
-            if url:
-                return 1, url
-        err = stderr.decode(errors="ignore")[-400:]
-        return 0, (err or "stream URL extraction failed")
 
-  proc = await asyncio.create_subprocess_exec(
-    "yt-dlp",
-    "--no-warnings",
-    "--no-playlist",
-    *(
-        ["--cookies", COOKIES_FILE]
-        if COOKIES_FILE and os.path.isfile(COOKIES_FILE)
-        else []
-    ),
-    *(["--sponsorblock-remove", SPONSORBLOCK_REMOVE] if SPONSORBLOCK_REMOVE else []),
-    "--no-simulate",
-    "--newline",
-    "--progress-template",
-    "download:PROG|%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s",
-    *(
-        ["--extractor-args", "youtube:player_client=android"]
-        if _YT_RE.match(link) else []
-    ),
-    "--print",
-    "after_move:filepath",
-    "-f",
-    "bestaudio[ext=m4a]/bestaudio/best",
-    "-o",
-    "downloads/%(id)s.%(ext)s",
-    f"{link}",
-    stdout=asyncio.subprocess.PIPE,
-    stderr=asyncio.subprocess.PIPE,
-)
+        output_text = stdout.decode(
+            "utf-8", errors="replace"
+        ).strip()
 
+        error_text = stderr.decode(
+            "utf-8", errors="replace"
+        ).strip()
+
+        if proc.returncode != 0:
+            return 0, (
+                error_text[-1200:]
+                or output_text[-1200:]
+                or "yt-dlp failed to download the audio."
+            )
+
+        # Find the actual downloaded file path.
+        for line in reversed(output_text.splitlines()):
+            filepath = line.strip()
+
+            if filepath and os.path.isfile(filepath):
+                return 1, filepath
+
+        return 0, (
+            "Download finished, but the output file was not found. "
+            + output_text[-500:]
+        )
+
+    except FileNotFoundError:
+        log.exception("yt-dlp executable was not found")
+        return 0, "yt-dlp is missing. Check the Render dependencies."
+
+    except asyncio.CancelledError:
+        raise
+
+    except Exception as exc:
+        log.exception("ytdl failed")
+        return 0, f"{type(exc).__name__}: {exc}"
 
 @Client.on_message(command(["play", f"play@{BOT_USERNAME}"]) & other_filters)
 @errors
