@@ -20,7 +20,11 @@ from pyrogram.errors import UserAlreadyParticipant, UserNotParticipant, PeerIdIn
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, Message
 from youtubesearchpython import VideosSearch
 
+log = logging.getLogger(__name__)
+
+
 def log_ytdlp_version():
+    """Log installed yt-dlp and yt-dlp-ejs versions at startup."""
     try:
         result = subprocess.run(
             ["yt-dlp", "--version"],
@@ -33,7 +37,17 @@ def log_ytdlp_version():
     except Exception:
         log.exception("Could not check yt-dlp version")
 
-log = logging.getLogger(__name__)
+    try:
+        from importlib.metadata import version, PackageNotFoundError
+        try:
+            log.info("YT-DLP-EJS VERSION: %s", version("yt-dlp-ejs"))
+        except PackageNotFoundError:
+            log.warning("YT-DLP-EJS is not installed")
+    except Exception:
+        log.exception("Could not check yt-dlp-ejs version")
+
+
+log_ytdlp_version()
 
 _DEFAULT_USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
