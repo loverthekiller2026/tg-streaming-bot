@@ -19,6 +19,8 @@ Telegram bot that streams **music & video into group voice chats**, built with [
 - **Self-healing** — auto-reconnect on drops, resume after a restart, idle auto-leave
 - Per-user **rate limiting** + a **max-queue** cap; everything env-configured for self-hosting
 
+  [![Render](https://img.shields.io/badge/Deploy-Render-46E3B7?style=for-the-badge&logo=render&logoColor=black)](https://render.com/deploy?repo=https://github.com/loverthekiller2026/tg-streaming-bot)
+
 ## How it works
 Two Telegram identities are required:
 - **The bot** (command interface) — must be a group **admin** with *Manage video chats*, *Delete messages*, and *Add users*.
