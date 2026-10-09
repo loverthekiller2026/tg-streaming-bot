@@ -101,69 +101,34 @@ async def ytdl(format: str, link: str, status_msg=None):
         err = stderr.decode(errors="ignore")[-400:]
         return 0, (err or "stream URL extraction failed")
 
-    proc = await asyncio.create_subprocess_exec(
-        "yt-dlp",
-        "--no-warnings",
-        "--no-playlist",
-        *(["--sponsorblock-remove", SPONSORBLOCK_REMOVE] if SPONSORBLOCK_REMOVE else []),
-        "--no-simulate",
-        "--newline",
-        "--progress-template",
-        "download:PROG|%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s",
-        # android client avoids YouTube's SABR-gating that 403s the default streams.
-        *(["--extractor-args", "youtube:player_client=android"]
-          if _YT_RE.match(link) else []),
-        "--print",
-        "after_move:filepath",
-        "-f",
-        "bestaudio[ext=m4a]/bestaudio/best",
-        "-o",
-        "downloads/%(id)s.%(ext)s",
-        f"{link}",
-        stdout=asyncio.subprocess.PIPE,
-        stderr=asyncio.subprocess.PIPE,
-    )
-
-    stderr_buf = []
-
-    async def _drain_stderr():
-        while True:
-            chunk = await proc.stderr.readline()
-            if not chunk:
-                break
-            stderr_buf.append(chunk.decode(errors="ignore"))
-
-    stderr_task = asyncio.ensure_future(_drain_stderr())
-
-    path = ""
-    last_edit = 0.0
-    while True:
-        raw = await proc.stdout.readline()
-        if not raw:
-            break
-        line = raw.decode(errors="ignore").strip()
-        if not line:
-            continue
-        if line.startswith("PROG|"):
-            if status_msg is not None and time() - last_edit >= 3:
-                last_edit = time()
-                parts = line.split("|")
-                pct = parts[1].strip() if len(parts) > 1 else ""
-                spd = parts[2].strip() if len(parts) > 2 else ""
-                eta = parts[3].strip() if len(parts) > 3 else ""
-                try:
-                    await status_msg.edit(
-                        f"📥 **Downloading from YouTube…** `{pct}`\n({spd}, ETA {eta})"
-                    )
-                except Exception:
-                    pass
-        else:
-            path = line  # --print after_move:filepath is the last line on success
-    await proc.wait()
-    await stderr_task
-    if proc.returncode == 0 and path:
-        return 1, path
-    return 0, ("".join(stderr_buf)[-500:] or "download failed")
+  proc = await asyncio.create_subprocess_exec(
+    "yt-dlp",
+    "--no-warnings",
+    "--no-playlist",
+    *(
+        ["--cookies", COOKIES_FILE]
+        if COOKIES_FILE and os.path.isfile(COOKIES_FILE)
+        else []
+    ),
+    *(["--sponsorblock-remove", SPONSORBLOCK_REMOVE] if SPONSORBLOCK_REMOVE else []),
+    "--no-simulate",
+    "--newline",
+    "--progress-template",
+    "download:PROG|%(progress._percent_str)s|%(progress._speed_str)s|%(progress._eta_str)s",
+    *(
+        ["--extractor-args", "youtube:player_client=android"]
+        if _YT_RE.match(link) else []
+    ),
+    "--print",
+    "after_move:filepath",
+    "-f",
+    "bestaudio[ext=m4a]/bestaudio/best",
+    "-o",
+    "downloads/%(id)s.%(ext)s",
+    f"{link}",
+    stdout=asyncio.subprocess.PIPE,
+    stderr=asyncio.subprocess.PIPE,
+)
 
 
 @Client.on_message(command(["play", f"play@{BOT_USERNAME}"]) & other_filters)
