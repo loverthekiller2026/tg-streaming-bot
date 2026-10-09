@@ -24,7 +24,7 @@ services:
         sync: false
 
       - key: ASSISTANT_NAME
-		value: assistant
+	    sync: false
 
       - key: GROUP_SUPPORT
         sync: false
@@ -47,7 +47,6 @@ services:
       - key: UPSTREAM_REPO
         sync: false
 	
-
       - key: RATE_LIMIT_MAX
         value: 5
 
