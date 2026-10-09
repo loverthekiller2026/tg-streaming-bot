@@ -1,0 +1,60 @@
+services:
+  - type: web
+    name: tg-streaming-bot
+    env: python
+    plan: free
+
+    buildCommand: "pip3 install --no-cache-dir --upgrade --requirement requirements.txt"
+    startCommand: "python main.py"
+
+    envVars:
+      - key: API_ID
+        sync: false
+
+      - key: API_HASH
+        sync: false
+
+      - key: BOT_USERNAME
+        sync: false
+
+      - key: BOT_TOKEN
+        sync: false
+
+      - key: SESSION_NAME
+        sync: false
+
+      - key: ASSISTANT_NAME
+	value: assistant
+
+      - key: GROUP_SUPPORT
+        sync: false
+
+      - key: UPDATES_CHANNEL
+        sync: false
+
+      - key: SUDO_USERS
+        sync: false
+
+      - key: DURATION_LIMIT
+        sync: false
+
+      - key: DOWNLOADS_CACHE_LIMIT_MB
+	value: 4096
+
+      - key: IDLE_LEAVE_MINUTES
+	value: 10
+
+      - key: UPSTREAM_REPO
+        sync: false
+	
+
+      - key: RATE_LIMIT_MAX
+        value: 5
+
+      - key: RATE_LIMIT_WINDOW
+        value: 10
+
+      - key: MAX_QUEUE_SIZE
+        value: 50
+
+      
