@@ -32,7 +32,7 @@ services:
       - key: IDLE_LEAVE_MINUTES
         value: "10"
       - key: UPSTREAM_REPO
-        sync:  "https://github.com/loverthekiller2026/tg-streaming-bot"
+        value: "https://github.com/loverthekiller2026/tg-streaming-bot"
       - key: RATE_LIMIT_MAX
         value: "5"
       - key: RATE_LIMIT_WINDOW
