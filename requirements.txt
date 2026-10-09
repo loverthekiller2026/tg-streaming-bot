@@ -3,6 +3,7 @@ ffmpeg-python
 py-tgcalls
 kurigram
 yt-dlp
+yt-dlp-ejs
 youtube-search-python==1.4.9
 youtube-search
 python-dotenv
