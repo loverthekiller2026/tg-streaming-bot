@@ -24,7 +24,7 @@ services:
         sync: false
 
       - key: ASSISTANT_NAME
-	value: assistant
+		value: assistant
 
       - key: GROUP_SUPPORT
         sync: false
