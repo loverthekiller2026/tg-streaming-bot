@@ -1,5 +1,4 @@
 import os
-
 from config import API_HASH, API_ID, BOT_TOKEN, SESSION_NAME
 from pyrogram import Client
 from pytgcalls import PyTgCalls
@@ -17,6 +16,10 @@ if os.getenv("PROXY_HOST"):
     if os.getenv("PROXY_USER"):
         PROXY["username"] = os.getenv("PROXY_USER")
         PROXY["password"] = os.getenv("PROXY_PASS")
+        
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DOWNLOADS_DIR = os.path.join(BASE_DIR, "downloads")
+os.makedirs(DOWNLOADS_DIR, exist_ok=True)
 
 # The bot session is persisted (downloads/ is a volume) so container restarts
 # reuse it instead of re-running auth.ImportBotAuthorization every boot —
@@ -28,7 +31,7 @@ bot = Client(
     bot_token=BOT_TOKEN,
     plugins={"root": "program"},
     proxy=PROXY,
-    workdir="downloads",
+    workdir=DOWNLOADS_DIR,
 )
 
 user = Client(
